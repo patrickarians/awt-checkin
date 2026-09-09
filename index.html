@@ -506,7 +506,13 @@
         }
 
         #pdfContent {
-            display: none;
+            position: absolute;
+            left: -9999px;
+            width: 210mm;
+            background: white;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            color: #000;
         }
 
         @media print {
@@ -623,12 +629,12 @@
         </div>
     </div>
 
-    <div id="pdfContent" style="background: white; padding: 20px; font-family: Arial, sans-serif;">
-        <h1 style="text-align: center; color: #003366; margin-bottom: 10px;">Auricher Wissenschaftstage 2026</h1>
-        <p style="text-align: center; color: #666; margin-bottom: 20px; border-bottom: 2px solid #003366; padding-bottom: 10px;">Check-in Bericht</p>
+    <div id="pdfContent">
+        <h1 style="text-align: center; color: #003366; margin-bottom: 10px; font-size: 28px;">Auricher Wissenschaftstage 2026</h1>
+        <p style="text-align: center; color: #666; margin-bottom: 20px; border-bottom: 2px solid #003366; padding-bottom: 10px; font-size: 16px;">Check-in Bericht</p>
         
         <div style="margin-bottom: 30px;">
-            <h3 style="color: #003366; margin-bottom: 10px;">📊 Statistik</h3>
+            <h3 style="color: #003366; margin-bottom: 10px; font-size: 16px;">📊 Statistik</h3>
             <table style="width: 100%; border-collapse: collapse;">
                 <tr style="background: #F8FCFF;">
                     <td style="padding: 8px; border: 1px solid #ddd;"><strong>Gesamtteilnehmer:</strong></td>
@@ -649,15 +655,15 @@
             </table>
         </div>
 
-        <div style="margin-bottom: 30px;">
-            <h3 style="color: #4CAF50; margin-bottom: 10px;">✓ Eingecheckte Personen</h3>
-            <table style="width: 100%; border-collapse: collapse;">
+        <div style="margin-bottom: 30px; page-break-inside: avoid;">
+            <h3 style="color: #4CAF50; margin-bottom: 10px; font-size: 16px;">✓ Eingecheckte Personen</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
                 <thead>
                     <tr style="background: #E8F5E9; border-bottom: 2px solid #4CAF50;">
-                        <th style="padding: 10px; text-align: left;">Name</th>
-                        <th style="padding: 10px; text-align: left;">Veranstaltung</th>
-                        <th style="padding: 10px; text-align: left;">Datum</th>
-                        <th style="padding: 10px; text-align: center;">Typ</th>
+                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Name</th>
+                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Veranstaltung</th>
+                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Datum</th>
+                        <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Typ</th>
                     </tr>
                 </thead>
                 <tbody id="pdfCheckedIn">
@@ -666,15 +672,15 @@
             </table>
         </div>
 
-        <div>
-            <h3 style="color: #f44336; margin-bottom: 10px;">✗ Noch nicht eingecheckt</h3>
-            <table style="width: 100%; border-collapse: collapse;">
+        <div style="page-break-inside: avoid;">
+            <h3 style="color: #f44336; margin-bottom: 10px; font-size: 16px;">✗ Noch nicht eingecheckt</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
                 <thead>
                     <tr style="background: #FFEBEE; border-bottom: 2px solid #f44336;">
-                        <th style="padding: 10px; text-align: left;">Name</th>
-                        <th style="padding: 10px; text-align: left;">Veranstaltung</th>
-                        <th style="padding: 10px; text-align: left;">Datum</th>
-                        <th style="padding: 10px; text-align: center;">Typ</th>
+                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Name</th>
+                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Veranstaltung</th>
+                        <th style="padding: 8px; text-align: left; border: 1px solid #ddd;">Datum</th>
+                        <th style="padding: 8px; text-align: center; border: 1px solid #ddd;">Typ</th>
                     </tr>
                 </thead>
                 <tbody id="pdfNotCheckedIn">
@@ -910,16 +916,10 @@
 
         function deleteParticipant(id) {
             if (confirm('Diesen Eintrag wirklich löschen?')) {
-                // Entferne aus participants Array
                 participants = participants.filter(p => p.id !== id);
-                
-                // Entferne aus checkedIn Set falls vorhanden
                 checkedIn.delete(id);
-                
-                // Speichere Änderungen
                 localStorage.setItem('participantsData', JSON.stringify(participants));
                 localStorage.setItem('checkedIn', JSON.stringify(Array.from(checkedIn)));
-                
                 render();
             }
         }
@@ -970,7 +970,6 @@
                 clickArea.innerHTML = html;
                 card.appendChild(clickArea);
 
-                // Delete Button
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-btn';
                 deleteBtn.innerHTML = '✕';
@@ -1020,13 +1019,11 @@
             const checkedInList = participants.filter(p => checkedIn.has(p.id));
             const notCheckedInList = participants.filter(p => !checkedIn.has(p.id));
 
-            // Aktualisiere PDF-Statistik
             document.getElementById('pdfTotalCount').textContent = participants.length;
             document.getElementById('pdfCheckedCount').textContent = checkedIn.size;
             document.getElementById('pdfRemainingCount').textContent = notCheckedInList.length;
             document.getElementById('pdfDate').textContent = new Date().toLocaleString('de-DE');
 
-            // Eingecheckte Personen
             let checkedHTML = '';
             if (checkedInList.length > 0) {
                 checkedInList.forEach(p => {
@@ -1038,7 +1035,6 @@
             }
             document.getElementById('pdfCheckedIn').innerHTML = checkedHTML;
 
-            // Noch nicht eingecheckte Personen
             let notCheckedHTML = '';
             if (notCheckedInList.length > 0) {
                 notCheckedInList.forEach(p => {
@@ -1050,7 +1046,6 @@
             }
             document.getElementById('pdfNotCheckedIn').innerHTML = notCheckedHTML;
 
-            // Generiere PDF
             const element = document.getElementById('pdfContent');
             const opt = {
                 margin: 10,
