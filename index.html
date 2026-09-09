@@ -6,9 +6,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Auricher Wissenschaftstage 2026 - Check-in</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -475,46 +472,6 @@
             display: none;
             font-size: 12px;
         }
-
-        .export-modal-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .export-btn {
-            padding: 15px;
-            font-size: 14px;
-            text-align: center;
-        }
-
-        .export-btn.csv {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .export-btn.csv:active {
-            background: #45a049;
-        }
-
-        .export-btn.pdf {
-            background: #FF5722;
-            color: white;
-        }
-
-        .export-btn.pdf:active {
-            background: #E64A19;
-        }
-
-        .export-btn.stats {
-            background: #9C27B0;
-            color: white;
-            grid-column: 1 / -1;
-        }
-
-        .export-btn.stats:active {
-            background: #7B1FA2;
-        }
     </style>
 </head>
 <body>
@@ -554,11 +511,7 @@
                 </div>
 
                 <div class="search-box">
-                    <input 
-                        type="text" 
-                        id="searchInput" 
-                        placeholder="Name suchen..."
-                    >
+                    <input type="text" id="searchInput" placeholder="Name suchen...">
                 </div>
 
                 <div id="participantList" class="participant-list"></div>
@@ -606,30 +559,28 @@
     </div>
 
     <div id="exportModal" class="modal">
-        <div class="modal-content" style="max-width: 350px;">
-            <h2>📊 Export Format</h2>
-            <p style="color: #666; margin-bottom: 20px; font-size: 14px;">Wähle dein gewünschtes Export-Format:</p>
-            
-            <div class="export-modal-content">
-                <button class="export-btn csv" id="exportCsvBtn">📄 CSV</button>
-                <button class="export-btn pdf" id="exportPdfBtn">📕 PDF Liste</button>
-                <button class="export-btn stats" id="exportStatsPdfBtn">📈 PDF Statistik</button>
+        <div class="modal-content">
+            <h2>📊 Export-Format</h2>
+            <div style="margin-bottom: 20px;">
+                <p style="color: #666; margin-bottom: 15px;">Wähle das gewünschte Export-Format:</p>
+                <button id="csvBtn" style="background: #2196F3; color: white; width: 100%; margin-bottom: 10px; padding: 12px;">📄 CSV-Datei</button>
+                <button id="pdfStatsBtn" style="background: #FF6F00; color: white; width: 100%; padding: 12px;">📈 PDF Statistik</button>
+            </div>
+            <div style="text-align: right;">
+                <button id="closeExportBtn" style="background: #999; color: white; padding: 10px 20px;">Abbrechen</button>
             </div>
         </div>
     </div>
 
-    <canvas id="chartCanvas" style="display: none;"></canvas>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <script>
-        const { jsPDF } = window.jspdf;
-        
         let participants = [];
         let checkedIn = new Set();
         const MAX_PARTICIPANTS = 210;
         const MAX_CAPACITY = 200;
         let defaultVenue = 'Auricher Wissenschaftstage 2026';
         let defaultDate = '';
-        let registeredCount = 0;
 
         document.getElementById('filePickerBtn').addEventListener('click', () => {
             document.getElementById('fileInput').click();
@@ -643,9 +594,9 @@
         document.getElementById('cancelBtn').addEventListener('click', closeGuestModal);
         document.getElementById('addBtn').addEventListener('click', addGuest);
         document.getElementById('searchInput').addEventListener('input', filterAndRender);
-        document.getElementById('exportCsvBtn').addEventListener('click', exportCheckInCSV);
-        document.getElementById('exportPdfBtn').addEventListener('click', exportCheckInPDF);
-        document.getElementById('exportStatsPdfBtn').addEventListener('click', exportStatsPDF);
+        document.getElementById('csvBtn').addEventListener('click', () => { exportCSV(); closeExportModal(); });
+        document.getElementById('pdfStatsBtn').addEventListener('click', () => { exportPDFStats(); closeExportModal(); });
+        document.getElementById('closeExportBtn').addEventListener('click', closeExportModal);
 
         document.getElementById('guestModal').addEventListener('click', function(e) {
             if (e.target === this) closeGuestModal();
@@ -665,7 +616,6 @@
                     parseCSV(event.target.result);
                     localStorage.setItem('participantsData', JSON.stringify(participants));
                     localStorage.setItem('checkedIn', '[]');
-                    localStorage.setItem('registeredCount', registeredCount);
                     checkedIn.clear();
                     
                     showUploadSuccess(participants.length);
@@ -723,7 +673,6 @@
                 throw new Error('CSV hat nicht die richtige Struktur.');
             }
 
-            registeredCount = 0;
             for (let i = 1; i < lines.length; i++) {
                 if (lines[i].trim() === '') continue;
                 
@@ -735,8 +684,6 @@
                 if (status === 'approved' && teilnehmer) {
                     let name = teilnehmer.replace(/\s*\+\d{10,}/g, '').trim();
                     const anzahl = Math.max(1, parseInt(values[gebuchtIdx]) || 1);
-                    
-                    registeredCount += anzahl;
                     
                     if (defaultDate === '' && values[datumIdx]) {
                         defaultDate = values[datumIdx];
@@ -783,14 +730,6 @@
 
         function closeGuestModal() {
             document.getElementById('guestModal').classList.remove('active');
-        }
-
-        function openExportModal() {
-            document.getElementById('exportModal').classList.add('active');
-        }
-
-        function closeExportModal() {
-            document.getElementById('exportModal').classList.remove('active');
         }
 
         function addGuest() {
@@ -852,8 +791,10 @@
             if (confirm('Diesen Eintrag wirklich löschen?')) {
                 participants = participants.filter(p => p.id !== id);
                 checkedIn.delete(id);
+                
                 localStorage.setItem('participantsData', JSON.stringify(participants));
                 localStorage.setItem('checkedIn', JSON.stringify(Array.from(checkedIn)));
+                
                 render();
             }
         }
@@ -922,7 +863,15 @@
             filterAndRender();
         }
 
-        function exportCheckInCSV() {
+        function openExportModal() {
+            document.getElementById('exportModal').classList.add('active');
+        }
+
+        function closeExportModal() {
+            document.getElementById('exportModal').classList.remove('active');
+        }
+
+        function exportCSV() {
             const checkedInList = participants.filter(p => checkedIn.has(p.id));
             const notCheckedInList = participants.filter(p => !checkedIn.has(p.id));
 
@@ -946,242 +895,102 @@
             document.body.appendChild(element);
             element.click();
             document.body.removeChild(element);
-            closeExportModal();
         }
 
-        function exportCheckInPDF() {
-            const checkedInList = participants.filter(p => checkedIn.has(p.id));
-            const notCheckedInList = participants.filter(p => !checkedIn.has(p.id));
+        function exportPDFStats() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
 
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            let yPosition = 20;
+            // ✅ KORREKTE BERECHNUNG
+            const totalParticipants = participants.length;
+            const totalCheckedIn = checkedIn.size;
+            const totalGuests = participants.filter(p => p.isGuest).length;
+            const totalRegistered = totalParticipants - totalGuests;  // Angemeldet = Gesamt - Spontane
+            const checkedInRegistered = participants.filter(p => !p.isGuest && checkedIn.has(p.id)).length;
+            const checkedInGuests = participants.filter(p => p.isGuest && checkedIn.has(p.id)).length;
+            const capacityUsage = (totalCheckedIn / MAX_CAPACITY) * 100;
+            const availablePlaces = Math.max(0, MAX_CAPACITY - totalCheckedIn);
 
-            pdf.setFontSize(24);
-            pdf.setTextColor(0, 51, 102);
-            pdf.text('Auricher Wissenschaftstage 2026', 105, yPosition, { align: 'center' });
-            yPosition += 10;
+            // Header
+            doc.setFontSize(20);
+            doc.setTextColor(0, 51, 102);
+            doc.text('Statistik Bericht', 20, 20);
 
-            pdf.setFontSize(14);
-            pdf.text('Check-in Bericht', 105, yPosition, { align: 'center' });
-            yPosition += 12;
+            doc.setFontSize(14);
+            doc.text('Auricher Wissenschaftstage 2026', 20, 28);
 
-            pdf.setDrawColor(0, 51, 102);
-            pdf.line(20, yPosition - 2, 190, yPosition - 2);
-            yPosition += 8;
-
-            pdf.setFontSize(12);
-            pdf.setTextColor(0, 51, 102);
-            pdf.text('📊 Statistik', 20, yPosition);
-            yPosition += 10;
-
-            pdf.setFontSize(10);
-            pdf.setTextColor(0, 0, 0);
-            pdf.text(`Gesamtteilnehmer: ${participants.length}`, 25, yPosition);
-            yPosition += 6;
-            pdf.setTextColor(76, 175, 80);
-            pdf.text(`Eingecheckt: ${checkedIn.size}`, 25, yPosition);
-            yPosition += 6;
-            pdf.setTextColor(244, 67, 54);
-            pdf.text(`Noch nicht eingecheckt: ${notCheckedInList.length}`, 25, yPosition);
-            yPosition += 6;
-            pdf.setTextColor(0, 0, 0);
-            pdf.text(`Generiert: ${new Date().toLocaleString('de-DE')}`, 25, yPosition);
-            yPosition += 14;
-
-            pdf.setFontSize(12);
-            pdf.setTextColor(76, 175, 80);
-            pdf.text('✓ Eingecheckte Personen', 20, yPosition);
-            yPosition += 8;
-
-            pdf.setFontSize(9);
-            pdf.setTextColor(0, 0, 0);
-            
-            if (checkedInList.length > 0) {
-                const columns = ['Name', 'Veranstaltung', 'Datum', 'Typ'];
-                const data = checkedInList.map(p => [
-                    p.name,
-                    p.veranstaltung,
-                    p.datum,
-                    p.isGuest ? 'Spontan' : 'Gebucht'
-                ]);
-
-                const cellWidth = [50, 60, 40, 30];
-                let xPos = 20;
-                let colStart = yPosition;
-
-                pdf.setFillColor(232, 245, 233);
-                columns.forEach((col, i) => {
-                    pdf.rect(xPos, colStart, cellWidth[i], 6, 'F');
-                    pdf.text(col, xPos + 2, colStart + 4, { maxWidth: cellWidth[i] - 2 });
-                    xPos += cellWidth[i];
-                });
-                yPosition += 6;
-
-                data.forEach((row, idx) => {
-                    if (yPosition > 270) {
-                        pdf.addPage();
-                        yPosition = 20;
-                    }
-                    xPos = 20;
-                    row.forEach((cell, i) => {
-                        pdf.text(String(cell).substring(0, 25), xPos + 2, yPosition + 4, { maxWidth: cellWidth[i] - 2 });
-                        xPos += cellWidth[i];
-                    });
-                    pdf.line(20, yPosition + 5, 190, yPosition + 5);
-                    yPosition += 6;
-                });
-                yPosition += 6;
-            } else {
-                pdf.text('Keine Daten', 25, yPosition);
-                yPosition += 8;
-            }
-
-            yPosition += 4;
-            pdf.setFontSize(12);
-            pdf.setTextColor(244, 67, 54);
-            pdf.text('✗ Noch nicht eingecheckt', 20, yPosition);
-            yPosition += 8;
-
-            pdf.setFontSize(9);
-            pdf.setTextColor(0, 0, 0);
-            
-            if (notCheckedInList.length > 0) {
-                const columns = ['Name', 'Veranstaltung', 'Datum', 'Typ'];
-                const data = notCheckedInList.map(p => [
-                    p.name,
-                    p.veranstaltung,
-                    p.datum,
-                    p.isGuest ? 'Spontan' : 'Gebucht'
-                ]);
-
-                const cellWidth = [50, 60, 40, 30];
-                let xPos = 20;
-                let colStart = yPosition;
-
-                pdf.setFillColor(255, 235, 238);
-                columns.forEach((col, i) => {
-                    pdf.rect(xPos, colStart, cellWidth[i], 6, 'F');
-                    pdf.text(col, xPos + 2, colStart + 4, { maxWidth: cellWidth[i] - 2 });
-                    xPos += cellWidth[i];
-                });
-                yPosition += 6;
-
-                data.forEach((row, idx) => {
-                    if (yPosition > 270) {
-                        pdf.addPage();
-                        yPosition = 20;
-                    }
-                    xPos = 20;
-                    row.forEach((cell, i) => {
-                        pdf.text(String(cell).substring(0, 25), xPos + 2, yPosition + 4, { maxWidth: cellWidth[i] - 2 });
-                        xPos += cellWidth[i];
-                    });
-                    pdf.line(20, yPosition + 5, 190, yPosition + 5);
-                    yPosition += 6;
-                });
-            } else {
-                pdf.text('Keine Daten', 25, yPosition);
-            }
-
-            pdf.save(`checkin-${new Date().toISOString().split('T')[0]}.pdf`);
-            closeExportModal();
-        }
-
-        function exportStatsPDF() {
-            const checkedInList = participants.filter(p => checkedIn.has(p.id));
-            const guestCount = participants.filter(p => p.isGuest).length;
-            const guestCheckedIn = checkedInList.filter(p => p.isGuest).length;
-            const registeredCheckedIn = checkedInList.filter(p => !p.isGuest).length;
-            const totalComing = checkedInList.length;
-            const capacity = MAX_CAPACITY;
-            const capacityPercent = Math.round((totalComing / capacity) * 100);
-
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            let yPosition = 20;
-
-            // Titel
-            pdf.setFontSize(28);
-            pdf.setTextColor(0, 51, 102);
-            pdf.text('📈 Statistik Bericht', 105, yPosition, { align: 'center' });
-            yPosition += 15;
-
-            pdf.setFontSize(12);
-            pdf.setTextColor(100, 100, 100);
-            pdf.text('Auricher Wissenschaftstage 2026', 105, yPosition, { align: 'center' });
-            yPosition += 8;
-            pdf.text(new Date().toLocaleString('de-DE'), 105, yPosition, { align: 'center' });
-            yPosition += 15;
+            const now = new Date();
+            const dateTime = now.toLocaleDateString('de-DE') + ', ' + now.toLocaleTimeString('de-DE');
+            doc.setFontSize(10);
+            doc.setTextColor(100, 100, 100);
+            doc.text(dateTime, 20, 35);
 
             // Hauptstatistiken
-            pdf.setDrawColor(0, 51, 102);
-            pdf.setLineWidth(1);
-            pdf.rect(20, yPosition - 5, 170, 80);
+            doc.setFontSize(12);
+            doc.setTextColor(0, 51, 102);
+            doc.text('Hauptstatistiken', 20, 45);
 
-            pdf.setFontSize(14);
-            pdf.setTextColor(0, 51, 102);
-            pdf.text('Hauptstatistiken', 105, yPosition, { align: 'center' });
-            yPosition += 12;
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            let yPos = 52;
+            const lineHeight = 7;
 
-            pdf.setFontSize(11);
-            pdf.setTextColor(0, 0, 0);
-
-            // Statistik-Zeilen
             const stats = [
-                { label: 'Angemeldet:', value: registeredCount.toString(), color: [0, 102, 204] },
-                { label: 'Eingecheckt:', value: totalComing.toString(), color: [76, 175, 80] },
-                { label: 'Davon angemeldet:', value: registeredCheckedIn.toString(), color: [76, 175, 80] },
-                { label: 'Davon spontan:', value: guestCheckedIn.toString(), color: [76, 175, 80] },
-                { label: 'Spontane Besucher insgesamt:', value: guestCount.toString(), color: [255, 152, 0] }
+                ['Angemeldet:', totalRegistered],
+                ['Eingecheckt (gesamt):', totalCheckedIn],
+                ['  → davon angemeldet:', checkedInRegistered],
+                ['  → davon spontan:', checkedInGuests],
+                ['Spontane Besucher (gesamt):', totalGuests],
+                ['GESAMTTEILNEHMER:', totalParticipants]
             ];
 
             stats.forEach(stat => {
-                pdf.setTextColor(...stat.color);
-                pdf.text(stat.label, 30, yPosition, { maxWidth: 80 });
-                pdf.setFont(undefined, 'bold');
-                pdf.text(stat.value, 165, yPosition, { align: 'right' });
-                pdf.setFont(undefined, 'normal');
-                yPosition += 10;
+                doc.text(stat[0], 25, yPos);
+                doc.text(stat[1].toString(), 150, yPos);
+                yPos += lineHeight;
             });
 
-            yPosition += 10;
-
             // Auslastung
-            pdf.setDrawColor(156, 39, 176);
-            pdf.setLineWidth(1);
-            pdf.rect(20, yPosition - 5, 170, 50);
+            yPos += 5;
+            doc.setFontSize(12);
+            doc.setTextColor(0, 51, 102);
+            doc.text('Auslastung (max. ' + MAX_CAPACITY + ' Plätze)', 20, yPos);
 
-            pdf.setFontSize(14);
-            pdf.setTextColor(156, 39, 176);
-            pdf.text('📊 Auslastung (max. ' + capacity + ' Plätze)', 105, yPosition, { align: 'center' });
-            yPosition += 12;
+            yPos += 8;
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
 
-            // Balken
+            // Capacity Bar
             const barWidth = 150;
-            const barHeight = 15;
-            const filledWidth = (barWidth / capacity) * totalComing;
+            const barHeight = 10;
+            const barX = 25;
 
-            pdf.setDrawColor(200, 200, 200);
-            pdf.rect(27, yPosition, barWidth, barHeight);
+            // Hintergrund (grau)
+            doc.setDrawColor(200, 200, 200);
+            doc.rect(barX, yPos, barWidth, barHeight);
 
-            let barColor = [76, 175, 80];
-            if (capacityPercent > 80) barColor = [255, 152, 0];
-            if (capacityPercent > 95) barColor = [244, 67, 54];
+            // Auslastungs-Farbe
+            let barColor;
+            if (capacityUsage <= 80) {
+                barColor = [76, 175, 80]; // Grün
+            } else if (capacityUsage <= 95) {
+                barColor = [255, 152, 0]; // Orange
+            } else {
+                barColor = [244, 67, 54]; // Rot
+            }
 
-            pdf.setFillColor(...barColor);
-            pdf.rect(27, yPosition, filledWidth, barHeight, 'F');
+            doc.setFillColor(...barColor);
+            doc.rect(barX, yPos, (barWidth * capacityUsage) / 100, barHeight, 'F');
 
-            pdf.setFontSize(12);
-            pdf.setTextColor(0, 0, 0);
-            pdf.text(capacityPercent + '%', 105, yPosition + 9, { align: 'center' });
+            // Prozent-Text
+            doc.setTextColor(0, 0, 0);
+            doc.text(capacityUsage.toFixed(1) + '%', barX + barWidth + 10, yPos + 7);
 
-            yPosition += 20;
+            yPos += 15;
+            doc.text('Verfügbare Plätze: ' + availablePlaces + ' von ' + MAX_CAPACITY, 25, yPos);
 
-            pdf.setFontSize(11);
-            pdf.setTextColor(0, 0, 0);
-            pdf.text(`Verfügbare Plätze: ${capacity - totalComing} von ${capacity}`, 30, yPosition);
-
-            pdf.save(`statistik-${new Date().toISOString().split('T')[0]}.pdf`);
-            closeExportModal();
+            // Speichern
+            doc.save(`statistik-${new Date().toISOString().split('T')[0]}.pdf`);
         }
 
         function resetCheckIns() {
@@ -1199,10 +1008,6 @@
                 const savedCheckedIn = localStorage.getItem('checkedIn');
                 if (savedCheckedIn) {
                     checkedIn = new Set(JSON.parse(savedCheckedIn));
-                }
-                const savedRegistered = localStorage.getItem('registeredCount');
-                if (savedRegistered) {
-                    registeredCount = parseInt(savedRegistered);
                 }
                 if (participants.length > 0) {
                     defaultVenue = participants[0].veranstaltung;
