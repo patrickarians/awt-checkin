@@ -897,6 +897,35 @@
             document.body.removeChild(element);
         }
 
+        // Hilfsfunktion für Zeilenumbruch
+        function wrapText(text, maxWidth, fontSize) {
+            const charWidth = fontSize * 0.5; // Durchschnittliche Zeichenbreite
+            const charsPerLine = Math.floor(maxWidth / charWidth);
+            const lines = [];
+            let currentLine = '';
+            
+            const words = text.split(' ');
+            words.forEach(word => {
+                if ((currentLine + word).length > charsPerLine) {
+                    if (currentLine.trim()) {
+                        lines.push(currentLine.trim());
+                        currentLine = word + ' ';
+                    } else {
+                        lines.push(word);
+                        currentLine = '';
+                    }
+                } else {
+                    currentLine += word + ' ';
+                }
+            });
+            
+            if (currentLine.trim()) {
+                lines.push(currentLine.trim());
+            }
+            
+            return lines;
+        }
+
         function exportPDFStats() {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF();
@@ -919,36 +948,50 @@
             doc.setFontSize(14);
             doc.text('Auricher Wissenschaftstage 2026', 20, 28);
 
-            // Veranstaltung und Datum hinzufügen
+            // Veranstaltung mit Zeilenumbruch
+            let yPos = 35;
             doc.setFontSize(11);
             doc.setTextColor(51, 51, 51);
-            doc.text('Veranstaltung: ' + defaultVenue, 20, 35);
-            doc.text('Datum: ' + defaultDate, 20, 41);
+            
+            const venueLabel = 'Veranstaltung: ';
+            const venueLines = wrapText(defaultVenue, 150, 11);
+            doc.text(venueLabel + (venueLines.length > 0 ? venueLines[0] : ''), 20, yPos);
+            
+            // Wenn Veranstaltungsname mehrere Zeilen braucht
+            for (let i = 1; i < venueLines.length; i++) {
+                yPos += 6;
+                doc.text(venueLines[i], 30, yPos);
+            }
+            
+            yPos += 6;
+            doc.text('Datum: ' + defaultDate, 20, yPos);
 
             const now = new Date();
             const dateTime = now.toLocaleDateString('de-DE') + ', ' + now.toLocaleTimeString('de-DE');
             doc.setFontSize(10);
             doc.setTextColor(100, 100, 100);
-            doc.text('Bericht erstellt: ' + dateTime, 20, 48);
+            yPos += 6;
+            doc.text('Bericht erstellt: ' + dateTime, 20, yPos);
 
             // Hauptstatistiken
+            yPos += 10;
             doc.setFontSize(12);
             doc.setTextColor(0, 51, 102);
-            doc.text('Hauptstatistiken', 20, 58);
+            doc.text('Hauptstatistiken', 20, yPos);
 
             doc.setFontSize(10);
             doc.setTextColor(0, 0, 0);
-            let yPos = 66;
+            yPos += 8;
             const lineHeight = 7;
 
-            // Stats mit korrekten Aufzählungszeichen
+            // Stats ohne Unicode-Zeichen (verwende nur "-" Bindestriche)
             const stats = [
-                ['• Angemeldet:', totalRegistered],
-                ['• Eingecheckt (gesamt):', totalCheckedIn],
-                ['  ◦ davon angemeldet:', checkedInRegistered],
-                ['  ◦ davon spontan:', checkedInGuests],
-                ['• Spontane Besucher (gesamt):', totalGuests],
-                ['• GESAMTTEILNEHMER:', totalParticipants]
+                ['- Angemeldet:', totalRegistered],
+                ['- Eingecheckt (gesamt):', totalCheckedIn],
+                ['  o davon angemeldet:', checkedInRegistered],
+                ['  o davon spontan:', checkedInGuests],
+                ['- Spontane Besucher (gesamt):', totalGuests],
+                ['- GESAMTTEILNEHMER:', totalParticipants]
             ];
 
             stats.forEach(stat => {
@@ -961,7 +1004,7 @@
             yPos += 5;
             doc.setFontSize(12);
             doc.setTextColor(0, 51, 102);
-            doc.text('Auslastung (max. ' + MAX_CAPACITY + ' Plätze)', 20, yPos);
+            doc.text('Auslastung (max. ' + MAX_CAPACITY + ' Plaetze)', 20, yPos);
 
             yPos += 8;
             doc.setFontSize(10);
@@ -994,7 +1037,7 @@
             doc.text(capacityUsage.toFixed(1) + '%', barX + barWidth + 10, yPos + 7);
 
             yPos += 15;
-            doc.text('• Verfügbare Plätze: ' + availablePlaces + ' von ' + MAX_CAPACITY, 25, yPos);
+            doc.text('- Verfuegbare Plaetze: ' + availablePlaces + ' von ' + MAX_CAPACITY, 25, yPos);
 
             // Speichern
             doc.save(`statistik-${new Date().toISOString().split('T')[0]}.pdf`);
