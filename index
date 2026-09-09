@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Auricher Wissenschaftstage 2026 - Check-in</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #003366 0%, #0052A3 100%);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 10px;
+            margin: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 3px solid #003366;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            color: #003366;
+            font-size: 24px;
+            margin-bottom: 5px;
+        }
+
+        header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .upload-section {
+            background: #FFF3E0;
+            border: 3px dashed #FF9800;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            margin: 15px;
+            flex-shrink: 0;
+        }
+
+        .upload-section.hidden {
+            display: none;
+        }
+
+        .upload-section h2 {
+            color: #E65100;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .upload-section p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .upload-btn {
+            background: #FF9800;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            max-width: 250px;
+            touch-action: manipulation;
+        }
+
+        .upload-btn:active {
+            background: #F57C00;
+            transform: scale(0.95);
+        }
+
+        .upload-status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+
+        .upload-status.success {
+            background: #C8E6C9;
+            color: #2E7D32;
+        }
+
+        .upload-status.error {
+            background: #FFCDD2;
+            color: #C62828;
+        }
+
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 15px;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        .stat-box {
+            background: #F8FCFF;
+            padding: 10px;
+            border-radius: 8px;
+            border: 2px solid #0052A3;
+            text-align: center;
+        }
+
+        .stat-box h3 {
+            color: #003366;
+            font-size: 10px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .stat-box .number {
+            color: #0052A3;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .search-box {
+            margin-bottom: 15px;
+            flex-shrink: 0;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #0052A3;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .participant-list {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding: 5px;
+        }
+
+        .participant-card {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #fff;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+            position: relative;
+        }
+
+        .participant-card:active {
+            transform: scale(0.97);
+            background: #E3F2FD;
+            border-color: #0052A3;
+        }
+
+        .participant-card.checked-in {
+            background: #E8F5E9;
+            border-color: #4CAF50;
+        }
+
+        .participant-card.checked-in .name {
+            color: #2E7D32;
+        }
+
+        .participant-card.guest {
+            background: #FFF9C4;
+            border-color: #FBC02D;
+        }
+
+        .participant-card.guest .name {
+            color: #F57F17;
+        }
+
+        .name {
+            font-weight: bold;
+            font-size: 14px;
+            color: #003366;
+            margin-bottom: 5px;
+            word-break: break-word;
+        }
+
+        .veranstaltung {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 3px;
+            line-height: 1.2;
+        }
+
+        .datum {
+            font-size: 10px;
+            color: #999;
+            margin-bottom: 3px;
+        }
+
+        .badge {
+            display: inline-block;
+            background: #FBC02D;
+            color: #333;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 9px;
+            font-weight: bold;
+            margin-top: 3px;
+        }
+
+        .checked-in-text {
+            color: #4CAF50;
+            font-size: 9px;
+            font-weight: bold;
+            margin-top: 5px;
+            text-align: center;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background: #f44336;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            padding: 0;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-appearance: none;
+            appearance: none;
+            touch-action: manipulation;
+        }
+
+        .delete-btn:active {
+            background: #da190b;
+            transform: scale(0.9);
+        }
+
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            flex-shrink: 0;
+            padding: 10px 0 0 0;
+        }
+
+        button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            -webkit-appearance: none;
+            appearance: none;
+            -webkit-user-select: none;
+            user-select: none;
+            touch-action: manipulation;
+        }
+
+        .btn-guest {
+            background: #4CAF50;
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-guest:active {
+            background: #45a049;
+        }
+
+        .btn-export {
+            background: #2196F3;
+            color: white;
+        }
+
+        .btn-export:active {
+            background: #0b7dda;
+        }
+
+        .btn-reset {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-reset:active {
+            background: #da190b;
+        }
+
+        .btn-new-file {
+            background: #FF9800;
+            color: white;
+            grid-column: 1 / -1;
+        }
+
+        .btn-new-file:active {
+            background: #F57C00;
+        }
+
+        .content-section {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .content-section.active {
+            display: flex;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-content h2 {
+            color: #003366;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #003366;
+            font-weight: bold;
+            margin-bottom: 6px;
+            font-size: 13px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #0052A3;
+            border-radius: 5px;
+            font-size: 16px;
+            font-family: inherit;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #003366;
+            background: #F8FCFF;
+        }
+
+        .form-group input:disabled {
+            background-color: #f0f0f0;
+            color: #666;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            padding: 10px 15px;
+            font-size: 13px;
+        }
+
+        .modal-buttons .btn-cancel {
+            background: #999;
+            color: white;
+        }
+
+        .modal-buttons .btn-cancel:active {
+            background: #777;
+        }
+
+        .modal-buttons .btn-add {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .modal-buttons .btn-add:active {
+            background: #45a049;
+        }
+
+        .modal-error {
+            color: #C62828;
+            font-weight: bold;
+            padding: 10px;
+            background: #FFCDD2;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            display: none;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎓 Auricher Wissenschaftstage 2026</h1>
+            <p>Check-in Liste</p>
+        </header>
+
+        <div id="uploadSection" class="upload-section">
+            <h2>📂 CSV-Datei hochladen</h2>
+            <p>Lade hier deine events.csv Datei hoch um zu starten:</p>
+            
+            <button class="upload-btn" id="filePickerBtn">
+                📥 DATEI AUSWÄHLEN
+            </button>
+
+            <input type="file" id="fileInput" accept=".csv" />
+            <div id="uploadStatus"></div>
+        </div>
+
+        <div id="contentSection" class="content-section">
+            <div class="content-wrapper">
+                <div class="stats">
+                    <div class="stat-box">
+                        <h3>Gesamt</h3>
+                        <div class="number" id="totalCount">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <h3>Eingecheckt</h3>
+                        <div class="number" id="checkedCount">0</div>
+                    </div>
+                    <div class="stat-box">
+                        <h3>Zu kommen</h3>
+                        <div class="number" id="remainingCount">0</div>
+                    </div>
+                </div>
+
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        id="searchInput" 
+                        placeholder="Name suchen..."
+                    >
+                </div>
+
+                <div id="participantList" class="participant-list"></div>
+
+                <div class="buttons">
+                    <button class="btn-guest" id="guestBtn">➕ Spontan</button>
+                    <button class="btn-export" id="exportBtn">📊 Export</button>
+                    <button class="btn-reset" id="resetBtn">↻ Zurück</button>
+                    <button class="btn-new-file" id="newFileBtn">📂 Neue Datei</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="guestModal" class="modal">
+        <div class="modal-content">
+            <h2>➕ Spontaner Besucher</h2>
+            <div class="modal-error" id="modalError"></div>
+            
+            <div class="form-group">
+                <label for="guestName">Name *</label>
+                <input type="text" id="guestName" placeholder="Vor- und Nachname">
+            </div>
+
+            <div class="form-group">
+                <label for="guestVenue">Veranstaltung</label>
+                <input type="text" id="guestVenue" disabled>
+            </div>
+
+            <div class="form-group">
+                <label for="guestDate">Datum</label>
+                <input type="text" id="guestDate" disabled>
+            </div>
+
+            <div class="form-group">
+                <label for="guestQuantity">Anzahl Tickets</label>
+                <input type="number" id="guestQuantity" min="1" value="1">
+            </div>
+
+            <div class="modal-buttons">
+                <button class="btn-cancel" id="cancelBtn">Abbrechen</button>
+                <button class="btn-add" id="addBtn">Hinzufügen</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let participants = [];
+        let checkedIn = new Set();
+        const MAX_PARTICIPANTS = 210;
+        let defaultVenue = 'Auricher Wissenschaftstage 2026';
+        let defaultDate = '';
+
+        document.getElementById('filePickerBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        document.getElementById('guestBtn').addEventListener('click', openGuestModal);
+        document.getElementById('exportBtn').addEventListener('click', exportCheckIn);
+        document.getElementById('resetBtn').addEventListener('click', resetCheckIns);
+        document.getElementById('newFileBtn').addEventListener('click', uploadNewFile);
+        document.getElementById('cancelBtn').addEventListener('click', closeGuestModal);
+        document.getElementById('addBtn').addEventListener('click', addGuest);
+        document.getElementById('searchInput').addEventListener('input', filterAndRender);
+
+        document.getElementById('guestModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeGuestModal();
+            }
+        });
+
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    parseCSV(event.target.result);
+                    localStorage.setItem('participantsData', JSON.stringify(participants));
+                    localStorage.setItem('checkedIn', '[]');
+                    checkedIn.clear();
+                    
+                    showUploadSuccess(participants.length);
+                    showContent();
+                    render();
+                } catch (error) {
+                    showUploadError(error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function showUploadSuccess(count) {
+            const status = document.getElementById('uploadStatus');
+            status.innerHTML = `✓ ${count} Tickets geladen!`;
+            status.className = 'upload-status success';
+        }
+
+        function showUploadError(message) {
+            const status = document.getElementById('uploadStatus');
+            status.innerHTML = `✗ Fehler: ${message}`;
+            status.className = 'upload-status error';
+        }
+
+        function showContent() {
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('contentSection').classList.add('active');
+        }
+
+        function uploadNewFile() {
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('contentSection').classList.remove('active');
+            document.getElementById('uploadStatus').innerHTML = '';
+            document.getElementById('fileInput').value = '';
+        }
+
+        function parseCSV(csvText) {
+            participants = [];
+            const lines = csvText.trim().split('\n');
+            
+            if (lines.length < 2) {
+                throw new Error('CSV-Datei ist leer oder ungültig');
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+            
+            const teilnehmerIdx = headers.indexOf('Teilnehmer');
+            const statusIdx = headers.indexOf('Status');
+            const veranstaltungIdx = headers.indexOf('Veranstaltungsname');
+            const datumIdx = headers.indexOf('Datum');
+            const zeitIdx = headers.indexOf('Zeit');
+            const gebuchtIdx = headers.indexOf('Veranstaltung gebucht');
+
+            if (teilnehmerIdx === -1 || statusIdx === -1) {
+                throw new Error('CSV hat nicht die richtige Struktur.');
+            }
+
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].trim() === '') continue;
+                
+                const values = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+                
+                const status = values[statusIdx] ? values[statusIdx].toLowerCase() : '';
+                const teilnehmer = values[teilnehmerIdx] || '';
+
+                if (status === 'approved' && teilnehmer) {
+                    let name = teilnehmer.replace(/\s*\+\d{10,}/g, '').trim();
+                    const anzahl = Math.max(1, parseInt(values[gebuchtIdx]) || 1);
+                    
+                    if (defaultDate === '' && values[datumIdx]) {
+                        defaultDate = values[datumIdx];
+                    }
+                    if (values[veranstaltungIdx]) {
+                        defaultVenue = values[veranstaltungIdx];
+                    }
+                    
+                    for (let j = 0; j < anzahl; j++) {
+                        participants.push({
+                            name: name,
+                            veranstaltung: values[veranstaltungIdx] || '',
+                            datum: values[datumIdx] || '',
+                            zeit: values[zeitIdx] || '',
+                            isGuest: false,
+                            id: `${name}-${i}-${j}`
+                        });
+                    }
+                }
+            }
+
+            participants.sort((a, b) => {
+                const nameA = a.name.split(' ').pop().toLowerCase();
+                const nameB = b.name.split(' ').pop().toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+        }
+
+        function openGuestModal() {
+            if (participants.length >= MAX_PARTICIPANTS) {
+                alert(`Max. ${MAX_PARTICIPANTS} Tickets erreicht!`);
+                return;
+            }
+            
+            document.getElementById('guestVenue').value = defaultVenue;
+            document.getElementById('guestDate').value = defaultDate;
+            document.getElementById('guestName').value = '';
+            document.getElementById('guestQuantity').value = '1';
+            document.getElementById('modalError').style.display = 'none';
+            
+            document.getElementById('guestModal').classList.add('active');
+            document.getElementById('guestName').focus();
+        }
+
+        function closeGuestModal() {
+            document.getElementById('guestModal').classList.remove('active');
+        }
+
+        function addGuest() {
+            const name = document.getElementById('guestName').value.trim();
+            const venue = document.getElementById('guestVenue').value.trim();
+            const date = document.getElementById('guestDate').value.trim();
+            const quantity = Math.max(1, parseInt(document.getElementById('guestQuantity').value) || 1);
+            const errorDiv = document.getElementById('modalError');
+
+            if (!name) {
+                errorDiv.textContent = 'Bitte Namen eingeben!';
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            if (participants.length + quantity > MAX_PARTICIPANTS) {
+                errorDiv.textContent = `Zu viele! Max. ${MAX_PARTICIPANTS - participants.length} möglich.`;
+                errorDiv.style.display = 'block';
+                return;
+            }
+
+            for (let i = 0; i < quantity; i++) {
+                const newId = `guest-${Date.now()}-${i}`;
+                participants.push({
+                    name: name,
+                    veranstaltung: venue,
+                    datum: date,
+                    zeit: new Date().toLocaleTimeString('de-DE'),
+                    isGuest: true,
+                    id: newId
+                });
+                
+                // AUTOMATISCH EINCHECKEN
+                checkedIn.add(newId);
+            }
+
+            participants.sort((a, b) => {
+                const nameA = a.name.split(' ').pop().toLowerCase();
+                const nameB = b.name.split(' ').pop().toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+
+            localStorage.setItem('participantsData', JSON.stringify(participants));
+            localStorage.setItem('checkedIn', JSON.stringify(Array.from(checkedIn)));
+            closeGuestModal();
+            render();
+        }
+
+        function toggleCheckIn(id) {
+            if (checkedIn.has(id)) {
+                checkedIn.delete(id);
+            } else {
+                checkedIn.add(id);
+            }
+            localStorage.setItem('checkedIn', JSON.stringify(Array.from(checkedIn)));
+            render();
+        }
+
+        function deleteParticipant(id) {
+            if (confirm('Diesen Eintrag wirklich löschen?')) {
+                // Entferne aus participants Array
+                participants = participants.filter(p => p.id !== id);
+                
+                // Entferne aus checkedIn Set falls vorhanden
+                checkedIn.delete(id);
+                
+                // Speichere Änderungen
+                localStorage.setItem('participantsData', JSON.stringify(participants));
+                localStorage.setItem('checkedIn', JSON.stringify(Array.from(checkedIn)));
+                
+                render();
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('totalCount').textContent = participants.length;
+            document.getElementById('checkedCount').textContent = checkedIn.size;
+            document.getElementById('remainingCount').textContent = participants.length - checkedIn.size;
+        }
+
+        function filterAndRender() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = participants.filter(p => 
+                p.name.toLowerCase().includes(searchTerm)
+            );
+
+            const listDiv = document.getElementById('participantList');
+            listDiv.innerHTML = '';
+
+            if (filtered.length === 0) {
+                listDiv.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: #999; padding: 20px;">Keine Personen gefunden.</p>';
+                return;
+            }
+
+            filtered.forEach(participant => {
+                const card = document.createElement('div');
+                card.className = 'participant-card' + (checkedIn.has(participant.id) ? ' checked-in' : '') + (participant.isGuest ? ' guest' : '');
+                
+                const clickArea = document.createElement('div');
+                clickArea.style.flex = '1';
+                clickArea.style.cursor = 'pointer';
+                clickArea.addEventListener('click', () => toggleCheckIn(participant.id));
+
+                let html = `
+                    <div class="name">${participant.name}</div>
+                    <div class="veranstaltung">${participant.veranstaltung}</div>
+                    <div class="datum">${participant.datum}</div>
+                `;
+
+                if (participant.isGuest) {
+                    html += '<div class="badge">👤 Spontan</div>';
+                }
+
+                if (checkedIn.has(participant.id)) {
+                    html += '<div class="checked-in-text">✓ EINGECHECKT</div>';
+                }
+
+                clickArea.innerHTML = html;
+                card.appendChild(clickArea);
+
+                // Delete Button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.innerHTML = '✕';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteParticipant(participant.id);
+                });
+                card.appendChild(deleteBtn);
+
+                listDiv.appendChild(card);
+            });
+        }
+
+        function render() {
+            updateStats();
+            filterAndRender();
+        }
+
+        function exportCheckIn() {
+            const checkedInList = participants.filter(p => checkedIn.has(p.id));
+            const notCheckedInList = participants.filter(p => !checkedIn.has(p.id));
+
+            let csv = 'EINGECHECKTE PERSONEN\n';
+            csv += 'Name,Veranstaltung,Datum,Typ\n';
+            checkedInList.forEach(p => {
+                const type = p.isGuest ? 'Spontan' : 'Gebucht';
+                csv += `"${p.name}","${p.veranstaltung}","${p.datum}","${type}"\n`;
+            });
+
+            csv += '\n\nNOCH NICHT EINGECHECKT\n';
+            csv += 'Name,Veranstaltung,Datum,Typ\n';
+            notCheckedInList.forEach(p => {
+                const type = p.isGuest ? 'Spontan' : 'Gebucht';
+                csv += `"${p.name}","${p.veranstaltung}","${p.datum}","${type}"\n`;
+            });
+
+            const element = document.createElement('a');
+            element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv));
+            element.setAttribute('download', `checkin-${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        }
+
+        function resetCheckIns() {
+            if (confirm('Alle Check-ins wirklich zurücksetzen?')) {
+                checkedIn.clear();
+                localStorage.setItem('checkedIn', '[]');
+                render();
+            }
+        }
+
+        const savedData = localStorage.getItem('participantsData');
+        if (savedData) {
+            try {
+                participants = JSON.parse(savedData);
+                const savedCheckedIn = localStorage.getItem('checkedIn');
+                if (savedCheckedIn) {
+                    checkedIn = new Set(JSON.parse(savedCheckedIn));
+                }
+                if (participants.length > 0) {
+                    defaultVenue = participants[0].veranstaltung;
+                    defaultDate = participants[0].datum;
+                }
+                showContent();
+                render();
+            } catch (e) {
+                console.error('Fehler beim Laden der gespeicherten Daten:', e);
+            }
+        }
+    </script>
+</body>
+</html>
